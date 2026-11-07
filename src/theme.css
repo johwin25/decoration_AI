@@ -1,0 +1,27 @@
+/* Edit this file to restyle the entire interface. No component colors are hardcoded. */
+:root {
+  --background: #fff;
+  --surface: #f8f8f5;
+  --ink: #292c27;
+  --muted: #55584f;
+  --line: #dedfd9;
+  --accent: #3c4b38;
+  --accent-ink: #fff;
+  --font: Arial, Helvetica, sans-serif;
+  --display: Georgia, "Times New Roman", serif;
+  --radius: 8px;
+  --content: 1280px;
+  --gutter: 64px;
+  --motion: 180ms;
+  --receipt-duration: 1200ms;
+  --space-xs: 8px;
+  --space-sm: 16px;
+  --space-md: 24px;
+  --space-lg: 48px;
+  --space-xl: 96px;
+}
+@media (max-width: 700px) {
+  :root {
+    --gutter: 24px;
+  }
+}
