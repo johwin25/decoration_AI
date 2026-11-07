@@ -5,13 +5,6 @@ test("room intake, editable collection, receipt signature, persistence and reduc
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
-  await page.getByRole("button", { name: "Add your items" }).click();
-  await expect(page.getByLabel("Room name")).toBeVisible();
-  await page.getByLabel("Room name").fill("Reading room");
-  await page.getByRole("spinbutton", { name: "length", exact: true }).fill("4");
-  await page.getByRole("spinbutton", { name: "width", exact: true }).fill("3");
-  await page.getByLabel("I’ve checked these measurements.").check();
-  await page.getByRole("button", { name: "Add your items" }).click();
   await page.getByLabel("Item name").fill("Oak desk");
   await page.getByRole("button", { name: "Add to collection" }).click();
   await page.getByRole("button", { name: "On my wishlist" }).click();
@@ -21,6 +14,13 @@ test("room intake, editable collection, receipt signature, persistence and reduc
   await page.getByRole("button", { name: "Edit", exact: true }).first().click();
   await page.getByLabel("Item name").fill("My oak desk");
   await page.getByRole("button", { name: /Save item/ }).click();
+  await page.getByRole("button", { name: "Add room details" }).click();
+  await page.getByRole("button", { name: "Review your room" }).click();
+  await expect(page.getByLabel("Room name")).toBeVisible();
+  await page.getByLabel("Room name").fill("Reading room");
+  await page.getByRole("spinbutton", { name: "length", exact: true }).fill("4");
+  await page.getByRole("spinbutton", { name: "width", exact: true }).fill("3");
+  await page.getByLabel("I’ve checked these measurements.").check();
   await page.getByRole("button", { name: "Review your room" }).click();
   await expect(page.getByText("2 items need measurements")).toBeVisible();
   await expect(
@@ -56,8 +56,57 @@ test("room intake, editable collection, receipt signature, persistence and reduc
     ),
   ).toBeTruthy();
   await page.reload();
-  await expect(page.getByLabel("Room name")).toHaveValue("Reading room");
-  await page.getByRole("button", { name: "Add your items" }).click();
   await expect(page.getByText("My oak desk", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Add room details" }).click();
+  await expect(page.getByLabel("Room name")).toHaveValue("Reading room");
   expect(errors).toEqual([]);
+});
+
+test("upload-first flow accepts file selection and drops, rejects invalid files", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.getByLabel("Upload item images")).toBeAttached();
+  await expect(
+    page.getByRole("button", { name: "Add room details" }),
+  ).toBeDisabled();
+  const png = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l1sAAAAASUVORK5CYII=",
+    "base64",
+  );
+  await page.getByRole("button", { name: "On my wishlist" }).click();
+  await page.getByLabel("Upload item images").setInputFiles([
+    { name: "Desk.png", mimeType: "image/png", buffer: png },
+    { name: "Lamp.png", mimeType: "image/png", buffer: png },
+  ]);
+  await expect(page.getByText("Desk", { exact: true })).toBeVisible();
+  await expect(page.getByText("Lamp", { exact: true })).toBeVisible();
+  await expect(page.locator(".rows .item-row")).toHaveCount(2);
+  await expect(page.locator(".rows .item-row").first()).toContainText(
+    "Wishlist",
+  );
+  const drop = await page.evaluateHandle((bytes) => {
+    const d = new DataTransfer();
+    d.items.add(
+      new File([new Uint8Array(bytes)], "Shelf.png", { type: "image/png" }),
+    );
+    d.items.add(new File(["bad"], "Bad.txt", { type: "text/plain" }));
+    return d;
+  }, Array.from(png));
+  await page
+    .locator(".upload-first")
+    .dispatchEvent("drop", { dataTransfer: drop });
+  await expect(page.getByText("Shelf", { exact: true })).toBeVisible();
+  await expect(page.getByText(/1 could not be added/)).toBeVisible();
+  await expect(page.locator(".rows .item-row")).toHaveCount(3);
+  await expect(
+    page.getByRole("button", { name: "Add room details" }),
+  ).toBeEnabled();
+  await page.reload();
+  await expect(page.locator(".rows .item-row")).toHaveCount(3);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBeTruthy();
 });

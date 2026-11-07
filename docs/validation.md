@@ -34,3 +34,11 @@ The unmodified Taste Skill layout checker completed with **no findings** at 1440
 Final consistency rerun at 1440: **21 FAIL / 1 WARN**, with **text contrast PASS**. Remaining findings concern the React root/application structure, marketing hero/screen rules, the application's two-column split, local-only form submission, and a text-only footer. This is an explicit exception report, not a claim that the full consistency check passed. All five sizes were covered by the initial consistency run and the final layout rerun.
 
 A fresh `npm ci` also completed successfully against the saved lockfile. Reusable `install_script` and `start_skill` were saved in the environment draft; they are not published automatically.
+
+## Upload-first milestone
+
+Updated the journey to images/items → room details → review. The production build passes. The updated browser suite passes **4 tests** (two on desktop, two on mobile), including multiple file uploads, drag-and-drop, invalid-file rejection, ownership preservation, editable items, room validation, receipt/signature behavior and reload persistence. The upload page was visually inspected at 1440 and 390. The mobile layout checker reported no findings; the desktop check identified an intro paragraph off the shared column line, corrected before the final desktop rerun.
+
+The painterly/original-colors/soft-daylight direction and close-reference fidelity requirement are recorded in editable config and the review screen. No models were generated and no conversion service was called.
+
+Final desktop layout rerun still flags that intro paragraph at x=732, which is the intended shared split line (left edge 80, 12-column grid with 24px gaps). This is retained as a documented application-grid detection exception; the layout checker did not fully pass at desktop. Mobile had no findings.

@@ -83,20 +83,23 @@ export default function App() {
         </nav>
         <div id="workspace" className="workspace">
           {step === 0 ? (
-            <RoomStep
-              room={project.room}
-              onChange={(room) => setProject((p) => ({ ...p, room }))}
-              onNext={() => go(1)}
-            />
-          ) : step === 1 ? (
             <ItemsStep
               items={project.items}
               onChange={(items) => setProject((p) => ({ ...p, items }))}
+              onImport={(items) =>
+                setProject((p) => ({ ...p, items: [...p.items, ...items] }))
+              }
+              onNext={() => go(1)}
+            />
+          ) : step === 1 ? (
+            <RoomStep
+              room={project.room}
+              onChange={(room) => setProject((p) => ({ ...p, room }))}
               onBack={() => go(0)}
               onNext={() => go(2)}
             />
           ) : (
-            <ReviewStep project={project} onBack={() => go(0)} />
+            <ReviewStep project={project} onBack={() => go(1)} />
           )}
         </div>
       </main>

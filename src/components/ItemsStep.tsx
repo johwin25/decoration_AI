@@ -18,16 +18,55 @@ export function ItemsStep({
   items,
   onChange,
   onNext,
-  onBack,
+  onImport,
 }: {
   items: Item[];
   onChange: (items: Item[]) => void;
   onNext: () => void;
-  onBack: () => void;
+  onImport: (items: Item[]) => void;
 }) {
   const [item, setItem] = useState<Item>(draft);
   const [error, setError] = useState("");
   const [editing, setEditing] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const [importStatus, setImportStatus] = useState("");
+  async function importImages(files: FileList | File[]) {
+    if (importing) return;
+    setImporting(true);
+    const accepted: Item[] = [];
+    let rejected = 0;
+    for (const file of Array.from(files)) {
+      if (
+        !["image/jpeg", "image/png", "image/webp"].includes(file.type) ||
+        file.size > 2 * 1024 * 1024
+      ) {
+        rejected++;
+        continue;
+      }
+      try {
+        const image = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result));
+          reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(file);
+        });
+        accepted.push({
+          ...draft(),
+          name: file.name.replace(/\.[^.]+$/, "").slice(0, 100),
+          image,
+          ownership: item.ownership,
+        });
+      } catch {
+        rejected++;
+      }
+    }
+    if (accepted.length) onImport(accepted);
+    setImportStatus(
+      `${accepted.length} image${accepted.length === 1 ? "" : "s"} added.${rejected ? ` ${rejected} could not be added. Use JPG, PNG or WebP under 2 MB each.` : " Review names, ownership, placement and measurements below."}`,
+    );
+    setImporting(false);
+  }
   const set = (key: keyof Item, value: string | number) =>
     setItem((v) => ({ ...v, [key]: value }));
   async function upload(file?: File) {
@@ -50,7 +89,7 @@ export function ItemsStep({
     <>
       <div className="section-heading">
         <div>
-          <span className="eyebrow">02 / The collection</span>
+          <span className="eyebrow">01 / Your images</span>
           <h1>
             The things that
             <br />
@@ -63,6 +102,49 @@ export function ItemsStep({
           Keep them together, but clearly distinguished.
         </p>
       </div>
+      <label
+        className={`upload upload-first${dragging ? " is-dragging" : ""}`}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragging(true);
+        }}
+        onDragLeave={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null))
+            setDragging(false);
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragging(false);
+          void importImages(e.dataTransfer.files);
+        }}
+      >
+        <strong>
+          {importing
+            ? "Adding your images…"
+            : "Drop your images here, or choose files"}
+        </strong>
+        <span>Screenshots & photos · JPG, PNG, WebP · Up to 2 MB each</span>
+        <span>
+          New images use the ownership choice below. You can edit each item
+          afterward.
+        </span>
+        <input
+          aria-label="Upload item images"
+          type="file"
+          multiple
+          accept="image/jpeg,image/png,image/webp"
+          disabled={importing}
+          onChange={(e) => {
+            if (e.target.files) void importImages(e.target.files);
+            e.target.value = "";
+          }}
+        />
+      </label>
+      {importStatus && (
+        <p className="import-status" role="status">
+          {importStatus}
+        </p>
+      )}
       <div className="items-layout">
         <form
           className="form-panel"
@@ -277,15 +359,12 @@ export function ItemsStep({
         </div>
       </div>
       <div className="page-actions">
-        <button onClick={onBack}>
-          <Arrow direction="back" /> Room details
-        </button>
         <button
           className="primary"
-          disabled={!items.length || editing}
+          disabled={!items.length || editing || importing}
           onClick={onNext}
         >
-          Review your room <Arrow />
+          Add room details <Arrow />
         </button>
       </div>
     </>

@@ -4,10 +4,12 @@ export function RoomStep({
   room,
   onChange,
   onNext,
+  onBack,
 }: {
   room: Room;
   onChange: (r: Room) => void;
   onNext: () => void;
+  onBack: () => void;
 }) {
   const set = (key: keyof Room, value: string | boolean) =>
     onChange({
@@ -18,7 +20,7 @@ export function RoomStep({
   return (
     <div className="step-layout">
       <div className="intro">
-        <span className="eyebrow">01 / The starting point</span>
+        <span className="eyebrow">02 / Your space</span>
         <h1>
           A room to
           <br />
@@ -28,6 +30,9 @@ export function RoomStep({
           A few measurements help us understand your space. No room is too small
           to start with.
         </p>
+        <button type="button" onClick={onBack}>
+          <Arrow direction="back" /> Edit your items
+        </button>
         <div className="margin-note">
           <p>
             Keep a tape measure nearby.
@@ -99,9 +104,9 @@ export function RoomStep({
           I’ve checked these measurements.
         </label>
         <div className="form-bottom">
-          <span>Next up: the things you own & want</span>
+          <span>Next up: review your room & items</span>
           <button className="primary" type="submit">
-            Add your items <Arrow />
+            Review your room <Arrow />
           </button>
         </div>
       </form>

@@ -45,16 +45,18 @@ export function ReviewStep({
             <p className="constraints">{project.room.constraints}</p>
           )}
           <button onClick={onBack}>
-            Edit room &amp; items <Arrow />
+            Edit room details <Arrow />
           </button>
         </div>
         <div className="approval-panel">
           <span className="eyebrow">The 3D room comes next</span>
           <h2>{config.renderingStyle}</h2>
+          <p>{config.renderingMaterials}</p>
+          <p>{config.modelFidelity}</p>
           <p>
-            Your texture direction is recorded. Room generation requires
-            confirmed information, authorized assets, and your separate
-            permission.
+            Before creating a room, we’ll ask you to confirm its information,
+            rendering style, and permission to generate. Simple stand-ins are
+            not automatically approved.
           </p>
           <p className="status">
             {missing.length

@@ -1,6 +1,6 @@
 # Decoration AI
 
-An editable React + TypeScript interface for the approved guided room-planning workflow.
+An editable React + TypeScript interface for the approved guided room-planning workflow: upload images/items first, then room details, then review.
 
 ## Run
 
@@ -31,6 +31,7 @@ No backend or API credentials are needed. Changes appear through Vite hot reload
 ## Implemented
 
 - Required room measurements and explicit measurement confirmation.
+- Upload-first entry with multi-file selection and drag-and-drop for photos/screenshots (JPG/PNG/WebP, up to 2 MB each).
 - Owned/wishlist collection with image uploads, quantities, placement, optional measurements, user-supplied prices and links.
 - Edit/remove items, review missing dimensions, browser-local persistence and JSON export.
 - Button-triggered receipt animation and mouse/touch freehand signature with a clear action.
