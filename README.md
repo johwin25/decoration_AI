@@ -48,3 +48,13 @@ Receipt contents currently include all submitted items (none are placed yet), wi
 `npm run build` checks TypeScript and builds production assets. `npm test` runs the real-browser workflow against the dev server on port 5173. Chromium is discovered through `CHROME_PATH` or `/usr/bin/chromium`. Install Chromium or set that variable on other machines.
 
 See `docs/design-decisions.md` for approvals and scope, and `docs/validation.md` for validation evidence and design-check limitations.
+
+## Public demo on GitHub Pages
+
+The repository contains `.github/workflows/deploy-pages.yml`, which builds and deploys on pushes to `main` and can also be run manually. It uses GitHub's official Pages actions, Node 24 and `npm ci`; no hosting API keys are required.
+
+One-time repository setting: **Settings → Pages → Build and deployment → Source → GitHub Actions**. If the first workflow ran before Pages was enabled, rerun it from the Actions tab (or choose Run workflow). After a successful deployment, GitHub shows the published URL in the workflow's `github-pages` environment.
+
+The expected address is `https://johwin25.github.io/decoration_AI/`. It is not confirmed live until GitHub reports a successful deployment and the site loads. `npm run build:pages` builds for that subpath; local development continues to use `npm run dev`.
+
+This is a public frontend demo. Images and project data stay in the visitor's browser; there is no cloud upload, API backend or 3D generation service.

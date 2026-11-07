@@ -51,7 +51,7 @@ export default function App() {
     <>
       <header className="nav">
         <div className="wrap nav-inner">
-          <a className="wordmark" href="/" aria-label="Decoration AI home">
+          <a className="wordmark" href="./" aria-label="Decoration AI home">
             decoration<span className="brand-ai">ai</span>
             <span className="brand-dot" />
           </a>
