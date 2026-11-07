@@ -26,3 +26,11 @@ Room/item information and explicit permission to generate a room are required be
 User clarified that uploads belong to the website's first page, rather than requiring personal room/item photos in chat. The approved sequence is now images/items → room details → review. Support both drag-and-drop and file selection, including multiple photos and screenshots. Imported filenames are editable labels, not AI classifications.
 
 Rendering direction: painterly finish with original item colors and soft daylight. Aim for the closest feasible resemblance to uploaded items. Do not treat the user's fidelity request as permission for generic placeholder models. Disclose asset/model limitations before generation; per-project information and generation approval remain required. The existing 3.5 × 2.3 m example is not a default for every visitor; no ceiling height or door/window geometry was invented.
+
+## Local 3D editor and conversion boundary
+
+User wants a mechanism that uses uploaded item photos to create a room, and then requested trying ChatGPT's built-in model-building feature instead of Tripo. No photo-to-editable-mesh ChatGPT tool is available in this session, and chat tools cannot be called directly by the public static website. Tripo is not installed/configured; no login, model-generation call, photo upload or credit spending was performed. The provider discussion is superseded by the preference to stay local.
+
+Independent reusable work: a local Three.js editor, explicit per-project rendering approval, measured room shell, matching GLB import, initial floor placement, editable transforms and conservative warnings. The GLB attachment path is a real working foundation, not completion of automatic photo reconstruction. Photo-only items remain visibly unplaced, not replaced by generic geometry. Room-height input is required before rendering; it is not inferred. Non-floor objects await support/mount data. Doors/windows are disclosed as unmodeled. Original GLB textures are retained; painterly treatment currently applies to room surfaces, not automatic item retexturing.
+
+The active layout is saved locally. Changing the room or relevant item/model measurements invalidates the layout's rendering approval until reviewed and recreated. Named versions and portable binary model export remain pending.

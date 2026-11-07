@@ -99,7 +99,11 @@ export default function App() {
               onNext={() => go(2)}
             />
           ) : (
-            <ReviewStep project={project} onBack={() => go(1)} />
+            <ReviewStep
+              project={project}
+              onChange={setProject}
+              onBack={() => go(1)}
+            />
           )}
         </div>
       </main>

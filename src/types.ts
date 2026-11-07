@@ -16,11 +16,13 @@ export type Item = {
   quantity: number;
   placement: string;
   image?: string;
+  modelAssetId?: string;
+  modelFileName?: string;
   price: string;
   currency: string;
   url: string;
 };
-export type Project = { room: Room; items: Item[] };
+export type Project = { room: Room; items: Item[]; layout?: RoomLayout };
 export const emptyProject: Project = {
   room: {
     name: "",
@@ -31,4 +33,18 @@ export const emptyProject: Project = {
     confirmed: false,
   },
   items: [],
+};
+
+export type Placement = {
+  id: string;
+  itemId: string;
+  x: number;
+  y: number;
+  z: number;
+  rotation: number;
+};
+export type RoomLayout = {
+  fingerprint: string;
+  placements: Placement[];
+  notes: string[];
 };

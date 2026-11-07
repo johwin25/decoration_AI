@@ -42,3 +42,11 @@ Updated the journey to images/items → room details → review. The production 
 The painterly/original-colors/soft-daylight direction and close-reference fidelity requirement are recorded in editable config and the review screen. No models were generated and no conversion service was called.
 
 Final desktop layout rerun still flags that intro paragraph at x=732, which is the intended shared split line (left edge 80, 12-column grid with 24px gaps). This is retained as a documented application-grid detection exception; the layout checker did not fully pass at desktop. Mobile had no findings.
+
+## Local model/editor milestone
+
+Added actual GLB import, IndexedDB storage, lazy-loaded Three.js rendering, a per-project approval gate, measured room surfaces, initial floor placement and transform editing. Tests use a tiny generated mesh fixture only in isolated test browser data; no test assets are included as user belongings.
+
+Placement tests check spacing, model absence, oversized items and overlapping footprints. Browser tests check invalid GLB rejection, gate enforcement, actual model loading/rendering, out-of-room warnings, camera interaction controls, and model/layout restoration across reloads on desktop/mobile. The initial browser run found the old manually-started server had exited; Playwright now manages its own dev server for reproducible tests.
+
+Final results for the local editor: **8 tests passed**, including desktop/mobile real WebGL rendering using SwiftShader. Standard and GitHub Pages production builds passed. The 3D renderer/loader are dynamically loaded rather than requested on the upload page. Vite reports a large-chunk advisory for the Three.js/GLTF loader bundle (about 159 KiB compressed); no chunk warning was suppressed. The desktop editor screenshot was inspected. Real-world furniture reconstruction, external conversion, door geometry and photo-fidelity claims remain untested and unimplemented.

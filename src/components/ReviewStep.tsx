@@ -1,3 +1,5 @@
+import { RoomComposer } from "./RoomComposer";
+import { fingerprint } from "../scene/planner";
 import { Arrow } from "./Arrow";
 import { config } from "../config";
 import type { Project } from "../types";
@@ -5,13 +7,19 @@ import { Receipt } from "./Receipt";
 export function ReviewStep({
   project,
   onBack,
+  onChange,
 }: {
   project: Project;
   onBack: () => void;
+  onChange: (project: Project) => void;
 }) {
   const missing = project.items.filter(
     (i) => !i.width || !i.depth || !i.height,
   );
+  const layout =
+    project.layout?.fingerprint === fingerprint(project)
+      ? project.layout
+      : undefined;
   return (
     <>
       <div className="section-heading">
@@ -61,17 +69,24 @@ export function ReviewStep({
           <p className="status">
             {missing.length
               ? `${missing.length} item${missing.length > 1 ? "s need" : " needs"} measurements before fit can be checked.`
-              : "Item measurements supplied. Placement and collision checks are not implemented yet."}
+              : "Item measurements supplied. Matching models are needed for object placement."}
           </p>
           <p className="note">
-            This interface does not generate 3D rooms or call paid services.
-            Inspiration photos remain optional.
+            Room geometry and imported models are rendered locally after
+            approval. Photo conversion is not connected. Inspiration photos
+            remain optional.
           </p>
         </div>
       </div>
+      <RoomComposer project={project} onChange={onChange} />
       <div className="collection-heading">
         <h2>Your item list</h2>
-        <span>{project.items.length} items · All items awaiting placement</span>
+        <span>
+          {project.items.length} items ·{" "}
+          {layout
+            ? `${layout.placements.length} instances placed`
+            : "All items awaiting placement"}
+        </span>
       </div>
       <div className="rows">
         {project.items.map((i) => (
@@ -82,6 +97,11 @@ export function ReviewStep({
               <span>
                 {i.ownership === "owned" ? "Already owned" : "Wishlist"} ·{" "}
                 {i.quantity} × {i.placement}
+              </span>
+              <span>
+                {layout?.placements.some((p) => p.itemId === i.id)
+                  ? "In this room"
+                  : "Not placed"}
               </span>
               {i.url && (
                 <a href={i.url} target="_blank" rel="noreferrer">
