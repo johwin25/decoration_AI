@@ -1,3 +1,7 @@
+import { migrateProject } from "./migration";
+import { Atmosphere } from "./components/Atmosphere";
+import { SelectedTray } from "./components/SelectedTray";
+import { selectedItems } from "./selection";
 import { Arrow } from "./components/Arrow";
 import { useEffect, useState } from "react";
 import { config } from "./config";
@@ -15,7 +19,7 @@ function load(): Project {
       typeof data.room.name === "string" &&
       Array.isArray(data.items)
     )
-      return data;
+      return migrateProject(data);
   } catch {}
   return structuredClone(emptyProject);
 }
@@ -31,6 +35,17 @@ export default function App() {
       setSaveState("Storage full — download your project to keep changes");
     }
   }, [project]);
+  function toggleItem(id: string) {
+    setProject((p) => {
+      const ids = selectedItems(p).map((i) => i.id);
+      return {
+        ...p,
+        selectedItemIds: ids.includes(id)
+          ? ids.filter((v) => v !== id)
+          : [...ids, id],
+      };
+    });
+  }
   function go(next: number) {
     setStep(next);
     window.scrollTo({ top: 0 });
@@ -43,19 +58,20 @@ export default function App() {
     );
     const a = document.createElement("a");
     a.href = url;
-    a.download = "decoration-ai-project.json";
+    a.download = "mellow-room.json";
     a.click();
     URL.revokeObjectURL(url);
   }
   return (
     <>
+      <Atmosphere step={step} />
       <header className="nav">
         <div className="wrap nav-inner">
-          <a className="wordmark" href="./" aria-label="Decoration AI home">
-            decoration<span className="brand-ai">ai</span>
+          <a className="wordmark" href="./" aria-label="Mellow home">
+            {config.name}
             <span className="brand-dot" />
           </a>
-          <span className="nav-description">A space for your things.</span>
+          <span className="nav-description">A little more at home.</span>
           <button onClick={download}>
             Download project <Arrow />
           </button>
@@ -85,6 +101,8 @@ export default function App() {
           {step === 0 ? (
             <ItemsStep
               items={project.items}
+              selectedIds={selectedItems(project).map((i) => i.id)}
+              onToggle={toggleItem}
               onChange={(items) => setProject((p) => ({ ...p, items }))}
               onImport={(items) =>
                 setProject((p) => ({ ...p, items: [...p.items, ...items] }))
@@ -107,10 +125,17 @@ export default function App() {
           )}
         </div>
       </main>
+      <SelectedTray project={project} onToggle={toggleItem} view={step} />
       <footer className="wrap footer">
         <span>{config.name}</span>
         <span role="status">{saveState}</span>
-        <span>Made for the way you live.</span>
+        <span>
+          Atmospheres by{" "}
+          <a href="https://reactbits.dev" target="_blank" rel="noreferrer">
+            React Bits
+          </a>{" "}
+          · <a href="./licenses/react-bits.txt">License</a>
+        </span>
       </footer>
     </>
   );

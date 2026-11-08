@@ -1,3 +1,4 @@
+import { ItemRail } from "./ItemRail";
 import { Arrow } from "./Arrow";
 import { useState } from "react";
 import type { Item } from "../types";
@@ -19,11 +20,15 @@ export function ItemsStep({
   onChange,
   onNext,
   onImport,
+  selectedIds,
+  onToggle,
 }: {
   items: Item[];
   onChange: (items: Item[]) => void;
   onNext: () => void;
   onImport: (items: Item[]) => void;
+  selectedIds: string[];
+  onToggle: (id: string) => void;
 }) {
   const [item, setItem] = useState<Item>(draft);
   const [error, setError] = useState("");
@@ -145,6 +150,7 @@ export function ItemsStep({
           {importStatus}
         </p>
       )}
+      <ItemRail items={items} selectedIds={selectedIds} onToggle={onToggle} />
       <div className="items-layout">
         <form
           className="form-panel"

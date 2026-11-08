@@ -1,6 +1,6 @@
 // Shared labels. Step-specific copy lives in the matching component.
 export const config = {
-  name: "Decoration AI",
+  name: "Mellow",
   steps: ["Your images", "Your room", "Review & arrange"],
   renderingStyle: "Painterly finish",
   renderingMaterials:

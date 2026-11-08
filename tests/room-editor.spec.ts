@@ -1,5 +1,10 @@
+import { PerspectiveCamera, Vector3 } from "three";
 import { test, expect } from "@playwright/test";
-import { makeLayout, placementIssues } from "../src/scene/planner";
+import {
+  makeLayout,
+  placementIssues,
+  floorPlacement,
+} from "../src/scene/planner";
 import type { Project } from "../src/types";
 const project: Project = {
   room: {
@@ -82,6 +87,9 @@ test("placement uses real models, rejects oversized items and warns on overlap",
   const data = structuredClone(project);
   data.items[0].modelAssetId = "fixture";
   const layout = makeLayout(data);
+  expect(
+    floorPlacement(data, data.items[0], [], { x: 30, z: 0 })?.x,
+  ).toBeLessThanOrEqual(1);
   expect(layout.placements).toHaveLength(2);
   expect(placementIssues(data, layout.placements)).toEqual([]);
   layout.placements[1] = {
@@ -149,6 +157,47 @@ test("real GLB loads only after approval, edits persist, and missing models are 
     page.getByRole("button", { name: "Exit room interaction" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Exit room interaction" }).click();
+  const roomCanvas = page.locator(".room-canvas canvas");
+  await page.waitForTimeout(600);
+  const before = await roomCanvas.screenshot();
+  await page.getByRole("button", { name: "Finish clay", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Finish clay", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  const after = await roomCanvas.screenshot();
+  expect(before.equals(after)).toBeFalsy();
+  await page
+    .getByRole("button", { name: "Finish original", exact: true })
+    .click();
+  const bounds = (await roomCanvas.boundingBox())!;
+  const camera = new PerspectiveCamera(
+    40,
+    bounds.width / bounds.height,
+    0.01,
+    120,
+  );
+  camera.position.set(4.4, 3.8, 5);
+  camera.lookAt(0, 0.625, 0);
+  camera.updateMatrixWorld();
+  const target = new Vector3(-0.7, 0, 1).project(camera);
+  const transfer = await page.evaluateHandle(() => {
+    const d = new DataTransfer();
+    d.setData("application/x-mellow-item", "test-item");
+    return d;
+  });
+  await page.locator(".room-canvas").dispatchEvent("drop", {
+    dataTransfer: transfer,
+    clientX: bounds.x + ((target.x + 1) / 2) * bounds.width,
+    clientY: bounds.y + ((1 - target.y) / 2) * bounds.height,
+  });
+  const droppedX = await page
+    .getByLabel("Object x", { exact: true })
+    .inputValue();
+  const droppedZ = await page
+    .getByLabel("Object z", { exact: true })
+    .inputValue();
+  expect(Number(droppedX)).toBeCloseTo(-0.7, 1);
+  expect(Number(droppedZ)).toBeCloseTo(1, 1);
   await page.screenshot({
     path: `test-results/room-${test.info().project.name}.png`,
     fullPage: true,
@@ -158,6 +207,8 @@ test("real GLB loads only after approval, edits persist, and missing models are 
   await page.getByRole("button", { name: "Review your room" }).click();
   await expect(page.getByText(/2 of 2 model instances loaded/)).toBeVisible();
   await page.getByLabel("Selected 3D item").selectOption("test-item:0");
-  await expect(page.getByLabel("Object x", { exact: true })).toHaveValue("0");
+  await expect(page.getByLabel("Object x", { exact: true })).toHaveValue(
+    droppedX,
+  );
   expect(errors).toEqual([]);
 });

@@ -1,22 +1,25 @@
+import { selectedItems, knownTotals } from "../selection";
 import { config } from "../config";
 import { Arrow } from "./Arrow";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { PointerEvent } from "react";
 import type { Project } from "../types";
 export function Receipt({ project }: { project: Project }) {
   const [printed, setPrinted] = useState(false);
   const [signed, setSigned] = useState(false);
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const change = () => {
+      if (media.matches) setReady(true);
+    };
+    media.addEventListener("change", change);
+    return () => media.removeEventListener("change", change);
+  }, []);
   const canvas = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
-  const totals = project.items
-    .filter((i) => i.ownership === "wishlist" && i.price !== "")
-    .reduce<Record<string, number>>(
-      (acc, i) => ({
-        ...acc,
-        [i.currency]: (acc[i.currency] || 0) + Number(i.price) * i.quantity,
-      }),
-      {},
-    );
+  const items = selectedItems(project);
+  const totals = knownTotals(items);
   function point(e: PointerEvent<HTMLCanvasElement>) {
     const c = e.currentTarget;
     const rect = c.getBoundingClientRect();
@@ -26,6 +29,7 @@ export function Receipt({ project }: { project: Project }) {
     ];
   }
   function start(e: PointerEvent<HTMLCanvasElement>) {
+    if (!ready) return;
     e.currentTarget.setPointerCapture(e.pointerId);
     const ctx = e.currentTarget.getContext("2d")!;
     ctx.beginPath();
@@ -64,7 +68,12 @@ export function Receipt({ project }: { project: Project }) {
         <button
           className="primary"
           disabled={printed}
-          onClick={() => setPrinted(true)}
+          onClick={() => {
+            setPrinted(true);
+            setReady(
+              window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+            );
+          }}
         >
           {printed ? "Receipt printed" : "Print item receipt"} <Arrow />
         </button>
@@ -77,11 +86,18 @@ export function Receipt({ project }: { project: Project }) {
           <div className="printer-slot" />
         </div>
         {printed && (
-          <article className="receipt" aria-label="Item receipt">
+          <article
+            className={`receipt${ready ? " is-ready" : ""}`}
+            aria-label="Item receipt"
+            onAnimationEnd={(e) => {
+              if (e.target === e.currentTarget && e.animationName === "print")
+                setReady(true);
+            }}
+          >
             <h3>{config.name}</h3>
             <p>{project.room.name}</p>
             <div className="receipt-rule" />
-            {project.items.map((i) => (
+            {items.map((i) => (
               <div className="receipt-row" key={i.id}>
                 <span>
                   {i.quantity} × {i.name}
@@ -117,6 +133,7 @@ export function Receipt({ project }: { project: Project }) {
                 width="600"
                 height="180"
                 aria-label="Draw your signature here"
+                aria-disabled={!ready}
                 ref={canvas}
                 onPointerDown={start}
                 onPointerMove={move}
@@ -127,7 +144,9 @@ export function Receipt({ project }: { project: Project }) {
                   drawing.current = false;
                 }}
               />
-              <span>Draw your signature above</span>
+              <span>
+                {ready ? "Draw your signature above" : "Printing your receipt…"}
+              </span>
             </div>
             <button
               onClick={() => {

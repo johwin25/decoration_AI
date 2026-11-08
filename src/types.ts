@@ -18,11 +18,17 @@ export type Item = {
   image?: string;
   modelAssetId?: string;
   modelFileName?: string;
+  finish?: "original" | "clay" | "sage" | "oat";
   price: string;
   currency: string;
   url: string;
 };
-export type Project = { room: Room; items: Item[]; layout?: RoomLayout };
+export type Project = {
+  room: Room;
+  items: Item[];
+  selectedItemIds?: string[];
+  layout?: RoomLayout;
+};
 export const emptyProject: Project = {
   room: {
     name: "",

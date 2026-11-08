@@ -1,6 +1,6 @@
-# Decoration AI
+# Mellow
 
-An editable React + TypeScript interface for the approved guided room-planning workflow: upload images/items first, then room details, then review.
+A warm, tactile room planner with an editable React + TypeScript interface for the approved guided room-planning workflow: upload images/items first, then room details, then review.
 
 ## Run
 
@@ -68,3 +68,7 @@ This is a public frontend demo. Images and project data stay in the visitor's br
 - `src/scene/RoomCanvas.tsx`: room materials, model rendering and camera controls.
 - `src/scene/planner.ts`: initial floor placement and conservative overlap/bounds checks.
 - `src/services/modelAssets.ts`: validation and local IndexedDB storage for embedded GLBs.
+
+## Mellow design
+
+See [the design revision](docs/mellow-design.md) for the approved palette, sources, editable component locations and licensing. Existing projects retain their original storage keys. Receipt printing and freehand signing are preserved. Silk/Grainient atmosphere modes, the object table, selection tray, real-model room drops and live finish washes are included. Skiper interactions are original equivalents; its exact component was not accessible.

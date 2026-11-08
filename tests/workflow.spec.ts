@@ -30,8 +30,11 @@ test("room intake, editable collection, receipt signature, persistence and reduc
   await expect(
     page.getByRole("article", { name: "Item receipt" }),
   ).toBeVisible();
+  await expect(page.locator(".receipt")).toHaveCSS("animation-name", "print");
   const canvas = page.getByLabel("Draw your signature here");
+  await expect(canvas).toHaveAttribute("aria-disabled", "false");
   await canvas.scrollIntoViewIfNeeded();
+  await expect(page.locator(".selected-tray")).toBeHidden();
   const box = (await canvas.boundingBox())!;
   await page.mouse.move(box.x + 20, box.y + 30);
   await page.mouse.down();
@@ -56,7 +59,9 @@ test("room intake, editable collection, receipt signature, persistence and reduc
     ),
   ).toBeTruthy();
   await page.reload();
-  await expect(page.getByText("My oak desk", { exact: true })).toBeVisible();
+  await expect(
+    page.locator(".rows").getByText("My oak desk", { exact: true }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Add room details" }).click();
   await expect(page.getByLabel("Room name")).toHaveValue("Reading room");
   expect(errors).toEqual([]);
@@ -79,8 +84,12 @@ test("upload-first flow accepts file selection and drops, rejects invalid files"
     { name: "Desk.png", mimeType: "image/png", buffer: png },
     { name: "Lamp.png", mimeType: "image/png", buffer: png },
   ]);
-  await expect(page.getByText("Desk", { exact: true })).toBeVisible();
-  await expect(page.getByText("Lamp", { exact: true })).toBeVisible();
+  await expect(
+    page.locator(".rows").getByText("Desk", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.locator(".rows").getByText("Lamp", { exact: true }),
+  ).toBeVisible();
   await expect(page.locator(".rows .item-row")).toHaveCount(2);
   await expect(page.locator(".rows .item-row").first()).toContainText(
     "Wishlist",
@@ -96,7 +105,9 @@ test("upload-first flow accepts file selection and drops, rejects invalid files"
   await page
     .locator(".upload-first")
     .dispatchEvent("drop", { dataTransfer: drop });
-  await expect(page.getByText("Shelf", { exact: true })).toBeVisible();
+  await expect(
+    page.locator(".rows").getByText("Shelf", { exact: true }),
+  ).toBeVisible();
   await expect(page.getByText(/1 could not be added/)).toBeVisible();
   await expect(page.locator(".rows .item-row")).toHaveCount(3);
   await expect(

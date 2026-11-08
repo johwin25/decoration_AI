@@ -1,7 +1,14 @@
+import { ItemRail } from "./ItemRail";
+import { selectedItems } from "../selection";
 import { lazy, Suspense, useState } from "react";
 import type { Project, Placement } from "../types";
 import { config } from "../config";
-import { fingerprint, makeLayout, placementIssues } from "../scene/planner";
+import {
+  fingerprint,
+  makeLayout,
+  placementIssues,
+  floorPlacement,
+} from "../scene/planner";
 const RoomCanvas = lazy(() => import("../scene/RoomCanvas"));
 export function RoomComposer({
   project,
@@ -59,6 +66,49 @@ export function RoomComposer({
         ),
       },
     });
+  }
+  function placeItem(id: string, point?: { x: number; z: number }) {
+    if (!layout) return;
+    const item = project.items.find((i) => i.id === id);
+    if (!item) return;
+    if (!item.modelAssetId) {
+      setError("This item needs a matching GLB model before it can be placed.");
+      return;
+    }
+    const same = layout.placements.filter((p) => p.itemId === id);
+    if (!point && same.length >= item.quantity) {
+      setSelected(same[0].id);
+      setError("");
+      return;
+    }
+    const moving = same.length >= item.quantity ? same[0] : undefined;
+    const existing = moving
+      ? layout.placements.filter((p) => p.id !== moving.id)
+      : layout.placements;
+    const nextProject = {
+      ...project,
+      selectedItemIds: [
+        ...new Set([...selectedItems(project).map((i) => i.id), id]),
+      ],
+    };
+    const placement = floorPlacement(nextProject, item, existing, point);
+    if (!placement) {
+      setError(
+        "No clear floor position is available here. Check the measurements and choose another spot.",
+      );
+      return;
+    }
+    if (moving) placement.id = moving.id;
+    onChange({
+      ...nextProject,
+      layout: {
+        ...layout,
+        fingerprint: fingerprint(nextProject),
+        placements: [...existing, placement],
+      },
+    });
+    setSelected(placement.id);
+    setError("");
   }
   const issues = layout ? placementIssues(project, layout.placements) : [];
   return (
@@ -139,6 +189,11 @@ export function RoomComposer({
       )}
       {layout && (
         <>
+          <ItemRail
+            items={project.items}
+            selectedIds={selectedItems(project).map((i) => i.id)}
+            onPlace={placeItem}
+          />
           <Suspense fallback={<p role="status">Loading room editor…</p>}>
             <RoomCanvas
               key={layout.fingerprint}
@@ -146,6 +201,7 @@ export function RoomComposer({
               placements={layout.placements}
               selected={selected}
               onSelect={setSelected}
+              onDropItem={placeItem}
             />
           </Suspense>
           <div className="scene-inspector">
@@ -171,6 +227,33 @@ export function RoomComposer({
                   {chosenItem?.name} · Positions in meters from room center;
                   height above floor.
                 </p>
+                <fieldset className="finish-options">
+                  <legend>Finish wash</legend>
+                  <p>Try a color over the original texture.</p>
+                  {(["original", "clay", "sage", "oat"] as const).map(
+                    (finish) => (
+                      <button
+                        type="button"
+                        key={finish}
+                        aria-label={`Finish ${finish}`}
+                        aria-pressed={
+                          (chosenItem?.finish || "original") === finish
+                        }
+                        data-finish={finish}
+                        onClick={() =>
+                          onChange({
+                            ...project,
+                            items: project.items.map((i) =>
+                              i.id === chosen.itemId ? { ...i, finish } : i,
+                            ),
+                          })
+                        }
+                      >
+                        {finish[0].toUpperCase() + finish.slice(1)}
+                      </button>
+                    ),
+                  )}
+                </fieldset>
                 <div className="field-grid">
                   {(["x", "y", "z", "rotation"] as const).map((key) => (
                     <label key={key}>

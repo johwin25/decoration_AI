@@ -32,21 +32,44 @@ function paint(base: string): THREE.CanvasTexture {
   texture.repeat.set(3, 3);
   return texture;
 }
+function applyFinish(root: THREE.Object3D, finish?: string) {
+  const washes: Record<string, string> = {
+    clay: "#C98B6B",
+    sage: "#9CAF88",
+    oat: "#E8DCC8",
+  };
+  root.traverse((object) => {
+    if (!(object instanceof THREE.Mesh)) return;
+    for (const material of Array.isArray(object.material)
+      ? object.material
+      : [object.material]) {
+      if (!("color" in material)) continue;
+      const colored = material as THREE.MeshStandardMaterial;
+      if (!colored.userData.originalColor)
+        colored.userData.originalColor = colored.color.clone();
+      if (finish && finish !== "original" && washes[finish])
+        colored.color.set(washes[finish]);
+      else colored.color.copy(colored.userData.originalColor);
+    }
+  });
+}
 export default function RoomCanvas({
   project,
   placements,
   selected,
   onSelect,
+  onDropItem,
 }: {
   project: Project;
   placements: Placement[];
   selected: string;
   onSelect: (id: string) => void;
+  onDropItem: (id: string, point: { x: number; z: number }) => void;
 }) {
   const mount = useRef<HTMLDivElement>(null);
   const groups = useRef(new Map<string, THREE.Group>());
-  const current = useRef({ placements, selected, onSelect });
-  current.current = { placements, selected, onSelect };
+  const current = useRef({ placements, selected, onSelect, project });
+  current.current = { placements, selected, onSelect, project };
   const engine = useRef<
     | {
         camera: THREE.PerspectiveCamera;
@@ -86,9 +109,16 @@ export default function RoomCanvas({
     setError("");
     setLoaded(0);
     let cancelled = false;
+    const frames = new Set<number>();
+    const reduce = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
     groups.current.clear();
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color("#f8f8f5");
+    scene.background = new THREE.Color(
+      getComputedStyle(host).getPropertyValue("--background").trim() ||
+        "#F5EFE6",
+    );
     const width = Number(project.room.width),
       length = Number(project.room.length),
       height = Number(project.room.height),
@@ -231,6 +261,29 @@ export default function RoomCanvas({
           }
           groups.current.set(placement.id, positioned);
           scene.add(positioned);
+          applyFinish(
+            positioned,
+            current.current.project.items.find((i) => i.id === item.id)?.finish,
+          );
+          if (!reduce) {
+            const began = performance.now();
+            const settle = (now: number) => {
+              if (cancelled) return;
+              const p = current.current.placements.find(
+                (p) => p.id === placement.id,
+              );
+              if (!p) return;
+              const t = Math.min(1, (now - began) / 550);
+              positioned.position.y = p.y + 0.12 * Math.pow(1 - t, 3);
+              render();
+              if (t < 1) {
+                const frame = requestAnimationFrame(settle);
+                frames.add(frame);
+              }
+            };
+            const frame = requestAnimationFrame(settle);
+            frames.add(frame);
+          }
           setLoaded((n) => n + 1);
           render();
         } catch (e) {
@@ -269,6 +322,7 @@ export default function RoomCanvas({
     renderer.domElement.addEventListener("pointerup", pointerUp);
     return () => {
       cancelled = true;
+      frames.forEach(cancelAnimationFrame);
       observer.disconnect();
       controls.dispose();
       renderer.domElement.removeEventListener("pointerdown", pointerDown);
@@ -300,6 +354,17 @@ export default function RoomCanvas({
     }
     engine.current?.render();
   }, [placements]);
+  useEffect(() => {
+    for (const placement of placements) {
+      const group = groups.current.get(placement.id);
+      if (group)
+        applyFinish(
+          group,
+          project.items.find((i) => i.id === placement.itemId)?.finish,
+        );
+    }
+    engine.current?.render();
+  }, [project.items, placements]);
   function zoom(factor: number) {
     const e = engine.current;
     if (e) {
@@ -337,7 +402,39 @@ export default function RoomCanvas({
         <button onClick={orbit}>Rotate view</button>
         <button onClick={() => engine.current?.reset()}>Reset view</button>
       </div>
-      <div className="room-canvas" ref={mount} />
+      <div
+        className="room-canvas"
+        ref={mount}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "copy";
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          const id = e.dataTransfer.getData("application/x-mellow-item");
+          const camera = engine.current?.camera;
+          if (!id || !camera) return;
+          const bounds = (
+            e.currentTarget.querySelector("canvas") || e.currentTarget
+          ).getBoundingClientRect();
+          const ray = new THREE.Raycaster();
+          ray.setFromCamera(
+            new THREE.Vector2(
+              ((e.clientX - bounds.left) / bounds.width) * 2 - 1,
+              (-(e.clientY - bounds.top) / bounds.height) * 2 + 1,
+            ),
+            camera,
+          );
+          const point = new THREE.Vector3();
+          if (
+            ray.ray.intersectPlane(
+              new THREE.Plane(new THREE.Vector3(0, 1, 0), 0),
+              point,
+            )
+          )
+            onDropItem(id, { x: point.x, z: point.z });
+        }}
+      />
       <p className="note" role="status">
         {error ||
           `${loaded} of ${placements.length} model instances loaded. ${active ? "Drag to orbit; wheel or pinch to zoom. Exit interaction to scroll on touch." : "Page scrolling is enabled. Activate interaction to orbit or zoom."}`}

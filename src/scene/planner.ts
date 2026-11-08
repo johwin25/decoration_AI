@@ -1,8 +1,12 @@
+import { selectedItems } from "../selection";
 import { config } from "../config";
 import type { Project, RoomLayout, Placement, Item } from "../types";
 export function fingerprint(project: Project): string {
   return JSON.stringify({
     room: project.room,
+    selected: selectedItems(project)
+      .map((i) => i.id)
+      .sort(),
     rendering: config.renderingMaterials,
     items: project.items.map(
       ({ id, width, depth, height, quantity, placement, modelAssetId }) => ({
@@ -31,7 +35,7 @@ export function makeLayout(project: Project): RoomLayout {
   let x = 0.1,
     z = 0.1,
     rowDepth = 0;
-  for (const item of project.items) {
+  for (const item of selectedItems(project)) {
     if (!item.modelAssetId) {
       notes.push(
         `${item.name}: needs a matching GLB model; photo conversion is not connected.`,
@@ -125,4 +129,67 @@ export function placementIssues(
     }
   }
   return issues;
+}
+
+// Find a real, non-overlapping floor position. Never substitutes a generic mesh.
+export function floorPlacement(
+  project: Project,
+  item: Item,
+  existing: Placement[],
+  point?: { x: number; z: number },
+): Placement | undefined {
+  if (
+    !item.modelAssetId ||
+    !hasMeasurements(item) ||
+    item.placement !== "floor"
+  )
+    return;
+  const halfW = Number(project.room.width) / 2,
+    halfD = Number(project.room.length) / 2,
+    w = Number(item.width),
+    d = Number(item.depth);
+  if (
+    w > halfW * 2 ||
+    d > halfD * 2 ||
+    Number(item.height) > Number(project.room.height)
+  )
+    return;
+  const candidate = (x: number, z: number): Placement => ({
+    id: `${item.id}:${existing.filter((p) => p.itemId === item.id).length}`,
+    itemId: item.id,
+    x,
+    y: 0,
+    z,
+    rotation: 0,
+  });
+  const fits = (p: Placement) =>
+    !placementIssues(project, [...existing, p]).length;
+  if (point) {
+    const p = candidate(
+      Math.max(
+        -halfW + w / 2,
+        Math.min(halfW - w / 2, Math.round(point.x * 100) / 100),
+      ),
+      Math.max(
+        -halfD + d / 2,
+        Math.min(halfD - d / 2, Math.round(point.z * 100) / 100),
+      ),
+    );
+    return fits(p) ? p : undefined;
+  }
+  let candidates = 0;
+  for (
+    let z = -halfD + d / 2 + 0.05;
+    z <= halfD - d / 2;
+    z += Math.max(0.15, d / 2)
+  )
+    for (
+      let x = -halfW + w / 2 + 0.05;
+      x <= halfW - w / 2;
+      x += Math.max(0.15, w / 2)
+    ) {
+      if (++candidates > 4096) return;
+      const p = candidate(x, z);
+      if (fits(p)) return p;
+    }
 }
